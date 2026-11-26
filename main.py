@@ -2,7 +2,6 @@ import asyncio
 import sqlite3
 import time
 import random
-from datetime import datetime, timedelta
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import CommandStart, Command
 from aiogram.types import (
@@ -23,7 +22,6 @@ dp = Dispatcher(storage=storage)
 db = sqlite3.connect("game.db", check_same_thread=False)
 cur = db.cursor()
 
-# ====================== TABLES ======================
 cur.execute("""
 CREATE TABLE IF NOT EXISTS users(
     id INTEGER PRIMARY KEY,
@@ -71,175 +69,12 @@ class MinesStates(StatesGroup):
 
 class DiceStates(StatesGroup):
     waiting_bet = State()
-    waiting_mode = State()
 
 class RouletteStates(StatesGroup):
     waiting_bet = State()
-    waiting_color = State()
 
-# ====================== TRANSLATIONS ======================
-TEXTS = {
-    "ru": {
-        "main": "Главное меню\n\nВыбери раздел:",
-        "btn_games": "🎮 Игры",
-        "btn_profile": "👤 Профиль",
-        "btn_mining": "⛏ Майнинг",
-        "btn_top": "🏆 Рейтинг",
-        "btn_exchange": "💱 Обменник",
-        "games": "🎮 Игры",
-        "profile": "👤 Профиль",
-        "mining": "⛏ Майнинг",
-        "top": "🏆 Рейтинг",
-        "mines": "💣 Мины",
-        "rocket": "🚀 Ракета",
-        "dice": "🎲 Кости",
-        "roulette": "🎰 Рулетка",
-        "back": "🔙 Главное меню",
-        "farm": "⛏ Фарм",
-        "choose_lang": "Выбери язык / Choose language / 选择语言:",
-        "lang_changed": "✅ Язык изменён на Русский",
-        "admin": "Администратор",
-        "player": "Игрок",
-        "premium": "⭐ Premium",
-        "not_enough": "Недостаточно звёзд!",
-        "wait": "Подожди 1 секунду!",
-        "boom": "💥 БУМ! Ты попал на мину.\nСтавка {bet}⭐ сгорела.",
-        "win_all": "✅ Ты открыл все безопасные клетки!\nВыиграл {win}⭐ (Множитель {mult}x)",
-        "cashed": "✅ Ты забрал выигрыш: {win}⭐ (Множитель {mult}x)",
-        "rocket_fly": "🚀 РАКЕТА ЛЕТИТ...\n\nТекущий множитель: {mult}x\n\nСтавка: {bet} ⭐\nПотенциальный выигрыш: {win} ⭐",
-        "rocket_crash": "💥 РАКЕТА ВЗОРВАЛАСЬ!\n\nТочка краша: {crash}x\nТвоя ставка: {bet} ⭐\n\nТы потерял {bet} ⭐",
-        "rocket_win": "✅ ТЫ ЗАБРАЛ!\n\nМножитель: {mult}x\nСтавка: {bet} ⭐\nВыигрыш: {win} ⭐\nЧистая прибыль: +{profit} ⭐",
-        "already_rocket": "У тебя уже есть активная ракета!",
-        "choose_bet": "🚀 Ракета\n\nТвой баланс: {bal} ⭐\n\nВыбери ставку:",
-        "profile_text": "👤 Профиль\n\nИмя: {name}\n⭐ Звезды: {stars}\nУровень майнинга: {level}\nМесто в рейтинге: #{rank}\nСыграно игр: {games}\nРанг: {rank_name}\nPremium: {premium}\nНомер: {number}",
-        "top_title": "🏆 Топ 10 игроков:\n\n",
-        "mining_text": "Майнинг\n\n⭐ Всего: {stars}\nУровень: {level}\n\nЖми кнопку ниже:",
-        "games_text": "🎮 Игры\n\nВыбери игру:",
-        "mines_text": "💣 Мины\n\nВведи сумму ставки (от 100 до 1 000 000 ⭐):",
-        "mines_count": "💣 Теперь введи количество мин (от 1 до 24):",
-        "give_ok": "✅ Выдано {amount}⭐ пользователю @{user}",
-        "give_fail": "❌ Пользователь не найден",
-        "news_ok": "✅ Рассылка отправлена",
-        "no_access": "❌ Нет доступа",
-        "invalid_bet": "❌ Неверная сумма. Введи число от 100 до 1 000 000",
-        "invalid_mines": "❌ Неверное количество. Введи число от 1 до 24",
-        "exchange_text": "💱 Обменник\n\nКурс: 1 TON = 200 ⭐\n\nВведи количество TON которое хочешь обменять:",
-        "shop": "🛒 Магазин",
-        "buy_premium": "⭐ Купить Premium (10 000 000 ⭐ / 30 дней)",
-        "buy_888": "📱 Номер +888 (10 000 000 ⭐)",
-        "buy_7": "📱 Номер +7 (1 000 000 ⭐)",
-        "buy_380": "📱 Номер +380 (1 000 000 ⭐)",
-    },
-    "en": {
-        "main": "Main menu\n\nChoose a section:",
-        "btn_games": "🎮 Games",
-        "btn_profile": "👤 Profile",
-        "btn_mining": "⛏ Mining",
-        "btn_top": "🏆 Leaderboard",
-        "btn_exchange": "💱 Exchange",
-        "games": "🎮 Games",
-        "profile": "👤 Profile",
-        "mining": "⛏ Mining",
-        "top": "🏆 Leaderboard",
-        "mines": "💣 Mines",
-        "rocket": "🚀 Rocket",
-        "dice": "🎲 Dice",
-        "roulette": "🎰 Roulette",
-        "back": "🔙 Main menu",
-        "farm": "⛏ Farm",
-        "choose_lang": "Выбери язык / Choose language / 选择语言:",
-        "lang_changed": "✅ Language changed to English",
-        "admin": "Administrator",
-        "player": "Player",
-        "premium": "⭐ Premium",
-        "not_enough": "Not enough stars!",
-        "wait": "Wait 1 second!",
-        "boom": "💥 BOOM! You hit a mine.\nBet {bet}⭐ is lost.",
-        "win_all": "✅ You opened all safe cells!\nWon {win}⭐ (Multiplier {mult}x)",
-        "cashed": "✅ You cashed out: {win}⭐ (Multiplier {mult}x)",
-        "rocket_fly": "🚀 ROCKET IS FLYING...\n\nCurrent multiplier: {mult}x\n\nBet: {bet} ⭐\nPotential win: {win} ⭐",
-        "rocket_crash": "💥 ROCKET EXPLODED!\n\nCrash point: {crash}x\nYour bet: {bet} ⭐\n\nYou lost {bet} ⭐",
-        "rocket_win": "✅ CASHED OUT!\n\nMultiplier: {mult}x\nBet: {bet} ⭐\nWin: {win} ⭐\nProfit: +{profit} ⭐",
-        "already_rocket": "You already have an active rocket!",
-        "choose_bet": "🚀 Rocket\n\nYour balance: {bal} ⭐\n\nChoose bet:",
-        "profile_text": "👤 Profile\n\nName: {name}\n⭐ Stars: {stars}\nMining level: {level}\nRank position: #{rank}\nGames played: {games}\nRank: {rank_name}\nPremium: {premium}\nNumber: {number}",
-        "top_title": "🏆 Top 10 players:\n\n",
-        "mining_text": "Mining\n\n⭐ Total: {stars}\nLevel: {level}\n\nPress the button below:",
-        "games_text": "🎮 Games\n\nChoose a game:",
-        "mines_text": "💣 Mines\n\nEnter bet amount (from 100 to 1 000 000 ⭐):",
-        "mines_count": "💣 Now enter number of mines (from 1 to 24):",
-        "give_ok": "✅ Gave {amount}⭐ to @{user}",
-        "give_fail": "❌ User not found",
-        "news_ok": "✅ Broadcast sent",
-        "no_access": "❌ No access",
-        "invalid_bet": "❌ Invalid amount. Enter a number from 100 to 1 000 000",
-        "invalid_mines": "❌ Invalid number. Enter from 1 to 24",
-        "exchange_text": "💱 Exchange\n\nRate: 1 TON = 200 ⭐\n\nEnter amount of TON to exchange:",
-        "shop": "🛒 Shop",
-        "buy_premium": "⭐ Buy Premium (10 000 000 ⭐ / 30 days)",
-        "buy_888": "📱 Number +888 (10 000 000 ⭐)",
-        "buy_7": "📱 Number +7 (1 000 000 ⭐)",
-        "buy_380": "📱 Number +380 (1 000 000 ⭐)",
-    },
-    "zh": {
-        "main": "主菜单\n\n请选择:",
-        "btn_games": "🎮 游戏",
-        "btn_profile": "👤 个人资料",
-        "btn_mining": "⛏ 挖矿",
-        "btn_top": "🏆 排行榜",
-        "btn_exchange": "💱 兑换",
-        "games": "🎮 游戏",
-        "profile": "👤 个人资料",
-        "mining": "⛏ 挖矿",
-        "top": "🏆 排行榜",
-        "mines": "💣 地雷",
-        "rocket": "🚀 火箭",
-        "dice": "🎲 骰子",
-        "roulette": "🎰 轮盘",
-        "back": "🔙 主菜单",
-        "farm": "⛏ 收获",
-        "choose_lang": "Выбери язык / Choose language / 选择语言:",
-        "lang_changed": "✅ 语言已更改为中文",
-        "admin": "管理员",
-        "player": "玩家",
-        "premium": "⭐ Premium",
-        "not_enough": "星星不足!",
-        "wait": "请等待1秒!",
-        "boom": "💥 爆炸! 你踩到了地雷。\n下注 {bet}⭐ 已丢失。",
-        "win_all": "✅ 你打开了所有安全格子!\n赢得 {win}⭐ (倍数 {mult}x)",
-        "cashed": "✅ 你已兑现: {win}⭐ (倍数 {mult}x)",
-        "rocket_fly": "🚀 火箭飞行中...\n\n当前倍数: {mult}x\n\n下注: {bet} ⭐\n潜在奖金: {win} ⭐",
-        "rocket_crash": "💥 火箭爆炸!\n\n崩溃点: {crash}x\n你的下注: {bet} ⭐\n\n你失去了 {bet} ⭐",
-        "rocket_win": "✅ 已兑现!\n\n倍数: {mult}x\n下注: {bet} ⭐\n奖金: {win} ⭐\n利润: +{profit} ⭐",
-        "already_rocket": "你已经有一个活跃的火箭!",
-        "choose_bet": "🚀 火箭\n\n你的余额: {bal} ⭐\n\n选择下注:",
-        "profile_text": "👤 个人资料\n\n名字: {name}\n⭐ 星星: {stars}\n挖矿等级: {level}\n排名: #{rank}\n游戏次数: {games}\n等级: {rank_name}\nPremium: {premium}\n号码: {number}",
-        "top_title": "🏆 前10名玩家:\n\n",
-        "mining_text": "挖矿\n\n⭐ 总计: {stars}\n等级: {level}\n\n点击下方按钮:",
-        "games_text": "🎮 游戏\n\n选择游戏:",
-        "mines_text": "💣 地雷\n\n输入下注金额 (100 到 1 000 000 ⭐):",
-        "mines_count": "💣 现在输入地雷数量 (1 到 24):",
-        "give_ok": "✅ 已给予 {amount}⭐ 给 @{user}",
-        "give_fail": "❌ 用户未找到",
-        "news_ok": "✅ 广播已发送",
-        "no_access": "❌ 无权限",
-        "invalid_bet": "❌ 无效金额。请输入 100 到 1 000 000 的数字",
-        "invalid_mines": "❌ 无效数量。请输入 1 到 24",
-        "exchange_text": "💱 兑换\n\n汇率: 1 TON = 200 ⭐\n\n输入要兑换的 TON 数量:",
-        "shop": "🛒 商店",
-        "buy_premium": "⭐ 购买 Premium (10 000 000 ⭐ / 30天)",
-        "buy_888": "📱 号码 +888 (10 000 000 ⭐)",
-        "buy_7": "📱 号码 +7 (1 000 000 ⭐)",
-        "buy_380": "📱 号码 +380 (1 000 000 ⭐)",
-    }
-}
-
-def t(uid, key, **kwargs):
-    cur.execute("SELECT lang FROM users WHERE id=?", (uid,))
-    row = cur.fetchone()
-    lang = row[0] if row else "ru"
-    text = TEXTS.get(lang, TEXTS["ru"]).get(key, key)
-    return text.format(**kwargs) if kwargs else text
+def is_admin(user: types.User) -> bool:
+    return bool(user.username and user.username.lower() == ADMIN_USERNAME.lower())
 
 def get_user(uid):
     cur.execute("SELECT name, stars, level, last_click, games_played, is_admin, lang, premium_until, number FROM users WHERE id=?", (uid,))
@@ -252,345 +87,290 @@ def get_rank(uid):
 def fmt(num):
     return f"{num:,}".replace(",", " ")
 
-def generate_crash_point():
-    r = random.random()
-    if r < 0.38:
-        return round(random.uniform(1.00, 1.99), 2)
-    elif r < 0.72:
-        return round(random.uniform(2.00, 4.99), 2)
-    elif r < 0.90:
-        return round(random.uniform(5.00, 9.99), 2)
-    else:
-        return round(random.uniform(10.00, 80.00), 2)
-
-def main_reply_kb(uid):
+def main_kb():
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=t(uid, "btn_games")), KeyboardButton(text=t(uid, "btn_profile"))],
-            [KeyboardButton(text=t(uid, "btn_mining")), KeyboardButton(text=t(uid, "btn_top"))],
-            [KeyboardButton(text=t(uid, "btn_exchange")), KeyboardButton(text="🛒 Shop")]
+            [KeyboardButton(text="🎮 Игры"), KeyboardButton(text="👤 Профиль")],
+            [KeyboardButton(text="⛏ Майнинг"), KeyboardButton(text="🏆 Рейтинг")],
+            [KeyboardButton(text="💱 Обменник"), KeyboardButton(text="🛒 Shop")]
         ],
         resize_keyboard=True
     )
 
-def back_kb(uid):
+def back_ikb():
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=t(uid, "back"), callback_data="main")]
+        [InlineKeyboardButton(text="🔙 Главное меню", callback_data="main")]
     ])
-
-def mining_kb(uid):
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=t(uid, "farm"), callback_data="farm")],
-        [InlineKeyboardButton(text=t(uid, "back"), callback_data="main")]
-    ])
-
-def mines_grid(uid, mines_count, opened_list):
-    kb = []
-    row = []
-    for i in range(25):
-        if i in opened_list:
-            row.append(InlineKeyboardButton(text="✅", callback_data="noop"))
-        else:
-            row.append(InlineKeyboardButton(text="🔲", callback_data=f"open_{i}"))
-        if len(row) == 5:
-            kb.append(row)
-            row = []
-    kb.append([InlineKeyboardButton(text="💰 Cash Out", callback_data="cashout")])
-    kb.append([InlineKeyboardButton(text=t(uid, "back"), callback_data="main")])
-    return InlineKeyboardMarkup(inline_keyboard=kb)
 
 # ====================== START ======================
 @dp.message(CommandStart())
 async def start(msg: types.Message):
     uid = msg.from_user.id
     username = msg.from_user.username or ""
-    is_admin = 1 if username.lower() == ADMIN_USERNAME.lower() else 0
+    admin = 1 if is_admin(msg.from_user) else 0
 
     cur.execute("""
         INSERT OR IGNORE INTO users(id, name, username, join_date, is_admin)
         VALUES(?,?,?,?,?)
-    """, (uid, msg.from_user.first_name, username, time.time(), is_admin))
+    """, (uid, msg.from_user.first_name, username, time.time(), admin))
 
-    if is_admin:
+    if admin:
         cur.execute("UPDATE users SET is_admin=1, username=? WHERE id=?", (username, uid))
     db.commit()
 
-    await msg.answer(t(uid, "main"), reply_markup=main_reply_kb(uid))
+    await msg.answer("Главное меню\n\nВыбери раздел:", reply_markup=main_kb())
 
-# ====================== LANGUAGE ======================
-@dp.message(Command("language"))
-@dp.message(Command("lang"))
-async def language_cmd(msg: types.Message):
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🇷🇺 Русский", callback_data="setlang_ru")],
-        [InlineKeyboardButton(text="🇬🇧 English", callback_data="setlang_en")],
-        [InlineKeyboardButton(text="🇨🇳 中文", callback_data="setlang_zh")]
-    ])
-    await msg.answer(t(msg.from_user.id, "choose_lang"), reply_markup=kb)
-
-@dp.callback_query(F.data.startswith("setlang_"))
-async def set_language(cb: types.CallbackQuery):
-    lang = cb.data.split("_")[1]
-    uid = cb.from_user.id
-    cur.execute("UPDATE users SET lang=? WHERE id=?", (lang, uid))
-    db.commit()
-    await cb.message.edit_text(t(uid, "lang_changed"))
-    await cb.message.answer(t(uid, "main"), reply_markup=main_reply_kb(uid))
-
-# ====================== REPLY KEYBOARD ======================
-@dp.message(F.text.in_(["🎮 Игры", "🎮 Games", "🎮 游戏"]))
-async def reply_games(msg: types.Message):
+# ====================== REPLY BUTTONS ======================
+@dp.message(F.text == "⛏ Майнинг")
+async def mining_button(msg: types.Message):
     uid = msg.from_user.id
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=t(uid, "mines"), callback_data="mines_menu")],
-        [InlineKeyboardButton(text=t(uid, "rocket"), callback_data="rocket_menu")],
-        [InlineKeyboardButton(text=t(uid, "dice"), callback_data="dice_menu")],
-        [InlineKeyboardButton(text=t(uid, "roulette"), callback_data="roulette_menu")],
-        [InlineKeyboardButton(text=t(uid, "back"), callback_data="main")]
-    ])
-    await msg.answer(t(uid, "games_text"), reply_markup=kb)
-
-@dp.message(F.text.in_(["👤 Профиль", "👤 Profile", "👤 个人资料"]))
-async def reply_profile(msg: types.Message):
-    uid = msg.from_user.id
-    u = get_user(uid)
-    rank = get_rank(uid)
-    rank_name = t(uid, "admin") if u[5] else t(uid, "player")
-    
-    premium_status = "❌"
-    if u[7] and u[7] > time.time():
-        left = int((u[7] - time.time()) / 86400)
-        premium_status = f"✅ ещё {left} дн."
-    
-    number = u[8] if u[8] else "—"
-    
-    text = t(uid, "profile_text",
-             name=u[0], stars=fmt(u[1]), level=u[2],
-             rank=rank, games=u[4], rank_name=rank_name,
-             premium=premium_status, number=number)
-    await msg.answer(text, reply_markup=main_reply_kb(uid))
-
-@dp.message(F.text.in_(["⛏ Майнинг", "⛏ Mining", "⛏ 挖矿"]))
-async def reply_mining(msg: types.Message):
-    uid = msg.from_user.id
-    u = get_user(uid)
-    text = t(uid, "mining_text", stars=fmt(u[1]), level=u[2])
-    await msg.answer(text, reply_markup=mining_kb(uid))
-
-@dp.message(F.text.in_(["🏆 Рейтинг", "🏆 Leaderboard", "🏆 排行榜"]))
-async def reply_top(msg: types.Message):
-    uid = msg.from_user.id
-    cur.execute("SELECT name, stars FROM users ORDER BY stars DESC LIMIT 10")
-    rows = cur.fetchall()
-    text = t(uid, "top_title")
-    for i, row in enumerate(rows, 1):
-        text += f"{i}. {row[0]} — {fmt(row[1])}⭐\n"
-    await msg.answer(text, reply_markup=main_reply_kb(uid))
-
-@dp.message(F.text.in_(["💱 Обменник", "💱 Exchange", "💱 兑换"]))
-async def reply_exchange(msg: types.Message, state: FSMContext):
-    uid = msg.from_user.id
-    await msg.answer(t(uid, "exchange_text"))
-    await state.set_state("exchange_ton")
-
-@dp.message(F.text == "🛒 Shop")
-async def reply_shop(msg: types.Message):
-    uid = msg.from_user.id
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=t(uid, "buy_premium"), callback_data="buy_premium")],
-        [InlineKeyboardButton(text=t(uid, "buy_888"), callback_data="buy_number_888")],
-        [InlineKeyboardButton(text=t(uid, "buy_7"), callback_data="buy_number_7")],
-        [InlineKeyboardButton(text=t(uid, "buy_380"), callback_data="buy_number_380")],
-        [InlineKeyboardButton(text=t(uid, "back"), callback_data="main")]
-    ])
-    await msg.answer("🛒 Магазин", reply_markup=kb)
-
-# ====================== EXCHANGE ======================
-@dp.message(F.state == "exchange_ton")
-async def process_exchange(msg: types.Message, state: FSMContext):
-    uid = msg.from_user.id
-    try:
-        ton = float(msg.text.replace(",", "."))
-        if ton <= 0:
-            raise ValueError
-    except:
-        await state.clear()
-        return await msg.answer("❌ Неверное число")
-
-    stars = int(ton * 200)
-    cur.execute("UPDATE users SET stars = stars + ? WHERE id=?", (stars, uid))
-    db.commit()
-    await state.clear()
-    await msg.answer(f"✅ Обменяно!\n+{fmt(stars)} ⭐", reply_markup=main_reply_kb(uid))
-
-# ====================== SHOP ======================
-@dp.callback_query(F.data == "buy_premium")
-async def buy_premium(cb: types.CallbackQuery):
-    uid = cb.from_user.id
-    u = get_user(uid)
-    if u[1] < 10000000:
-        return await cb.answer(t(uid, "not_enough"), show_alert=True)
-    
-    cur.execute("UPDATE users SET stars = stars - 10000000, premium_until = ? WHERE id=?", 
-                (time.time() + 30*86400, uid))
-    db.commit()
-    await cb.message.edit_text("✅ Premium куплен на 30 дней!", reply_markup=back_kb(uid))
-
-@dp.callback_query(F.data.startswith("buy_number_"))
-async def buy_number(cb: types.CallbackQuery):
-    uid = cb.from_user.id
-    code = cb.data.split("_")[2]
-    u = get_user(uid)
-    
-    prices = {"888": 10000000, "7": 1000000, "380": 1000000}
-    price = prices.get(code, 1000000)
-    
-    if u[1] < price:
-        return await cb.answer(t(uid, "not_enough"), show_alert=True)
-    
-    if code == "888":
-        number = f"+888{random.randint(10000000, 99999999)}"
-    elif code == "7":
-        number = f"+7{random.randint(9000000000, 9999999999)}"
-    else:
-        number = f"+380{random.randint(100000000, 999999999)}"
-    
-    cur.execute("UPDATE users SET stars = stars - ?, number = ? WHERE id=?", (price, number, uid))
-    db.commit()
-    await cb.message.edit_text(f"✅ Номер получен!\n\n`{number}`", reply_markup=back_kb(uid), parse_mode="Markdown")
-
-# ====================== ADMIN ======================
-@dp.message(Command("give"))
-async def give_cmd(msg: types.Message):
-    uid = msg.from_user.id
-    u = get_user(uid)
-    if not u or not u[5]:
-        return await msg.answer(t(uid, "no_access"))
-
-    try:
-        parts = msg.text.split()
-        amount = int(parts[1])
-        username = parts[2].replace("@", "").lower()
-    except:
-        return await msg.answer("Usage: /give amount username")
-
-    cur.execute("SELECT id FROM users WHERE LOWER(username)=?", (username,))
-    row = cur.fetchone()
-    if not row:
-        return await msg.answer(t(uid, "give_fail"))
-
-    cur.execute("UPDATE users SET stars = stars + ? WHERE id=?", (amount, row[0]))
-    db.commit()
-    await msg.answer(t(uid, "give_ok", amount=fmt(amount), user=username))
-
-@dp.message(Command("news"))
-async def news_cmd(msg: types.Message):
-    uid = msg.from_user.id
-    u = get_user(uid)
-    if not u or not u[5]:
-        return await msg.answer(t(uid, "no_access"))
-
-    text = msg.text[6:].strip()
-    if not text:
-        return await msg.answer("Usage: /news text")
-
-    cur.execute("SELECT id FROM users")
-    users = cur.fetchall()
-    success = 0
-    for (user_id,) in users:
-        try:
-            await bot.send_message(user_id, f"📢 {text}")
-            success += 1
-        except:
-            pass
-    await msg.answer(f"{t(uid, 'news_ok')} ({success})")
-
-# ====================== INLINE MAIN ======================
-@dp.callback_query(F.data == "main")
-async def main_menu(cb: types.CallbackQuery):
-    uid = cb.from_user.id
-    await cb.message.answer(t(uid, "main"), reply_markup=main_reply_kb(uid))
-
-@dp.callback_query(F.data == "farm")
-async def farm(cb: types.CallbackQuery):
-    uid = cb.from_user.id
     now = time.time()
     u = get_user(uid)
 
+    if not u:
+        return await msg.answer("Сначала нажми /start")
+
     if now - u[3] < 1.0:
-        return await cb.answer(t(uid, "wait"), show_alert=True)
+        return await msg.answer("⏳ Подожди 1 секунду!")
 
     income = LEVELS.get(u[2], 1)
-    # Premium boost
-    if u[7] and u[7] > time.time():
+    if u[7] and u[7] > time.time():  # premium
         income = int(income * 1.5)
 
     cur.execute("UPDATE users SET stars = stars + ?, last_click = ? WHERE id=?", (income, now, uid))
     db.commit()
 
     u = get_user(uid)
-    text = t(uid, "mining_text", stars=fmt(u[1]), level=u[2])
-    await cb.message.edit_text(text, reply_markup=mining_kb(uid))
-    await cb.answer(f"+{income}⭐")
+    await msg.answer(
+        f"⛏ Майнинг\n\n"
+        f"⭐ Всего: {fmt(u[1])}\n"
+        f"Уровень: {u[2]}\n\n"
+        f"+{income}⭐",
+        reply_markup=main_kb()
+    )
+
+@dp.message(F.text == "👤 Профиль")
+async def profile_button(msg: types.Message):
+    uid = msg.from_user.id
+    u = get_user(uid)
+    if not u:
+        return await msg.answer("Сначала /start")
+
+    rank = get_rank(uid)
+    rank_name = "Администратор" if is_admin(msg.from_user) else "Игрок"
+
+    premium = "❌"
+    if u[7] and u[7] > time.time():
+        days = int((u[7] - time.time()) / 86400)
+        premium = f"✅ ещё {days} дн."
+
+    number = u[8] if u[8] else "—"
+
+    text = (
+        f"👤 Профиль\n\n"
+        f"Имя: {u[0]}\n"
+        f"⭐ Звезды: {fmt(u[1])}\n"
+        f"Уровень майнинга: {u[2]}\n"
+        f"Место в рейтинге: #{rank}\n"
+        f"Сыграно игр: {u[4]}\n"
+        f"Ранг: {rank_name}\n"
+        f"Premium: {premium}\n"
+        f"Номер: {number}"
+    )
+    await msg.answer(text, reply_markup=main_kb())
+
+@dp.message(F.text == "🏆 Рейтинг")
+async def top_button(msg: types.Message):
+    cur.execute("SELECT name, stars FROM users ORDER BY stars DESC LIMIT 10")
+    rows = cur.fetchall()
+    text = "🏆 Топ 10 игроков:\n\n"
+    for i, row in enumerate(rows, 1):
+        text += f"{i}. {row[0]} — {fmt(row[1])}⭐\n"
+    await msg.answer(text, reply_markup=main_kb())
+
+@dp.message(F.text == "🎮 Игры")
+async def games_button(msg: types.Message):
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="💣 Мины", callback_data="mines_menu")],
+        [InlineKeyboardButton(text="🚀 Ракета", callback_data="rocket_menu")],
+        [InlineKeyboardButton(text="🎲 Кости", callback_data="dice_menu")],
+        [InlineKeyboardButton(text="🎰 Рулетка", callback_data="roulette_menu")],
+        [InlineKeyboardButton(text="🔙 Назад", callback_data="main")]
+    ])
+    await msg.answer("🎮 Игры\n\nВыбери игру:", reply_markup=kb)
+
+@dp.message(F.text == "🛒 Shop")
+async def shop_button(msg: types.Message):
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="⭐ Premium — 10М ⭐ (30 дней)", callback_data="buy_premium")],
+        [InlineKeyboardButton(text="📱 +888 — 10М ⭐", callback_data="buy_888")],
+        [InlineKeyboardButton(text="📱 +7 — 1М ⭐", callback_data="buy_7")],
+        [InlineKeyboardButton(text="📱 +380 — 1М ⭐", callback_data="buy_380")],
+        [InlineKeyboardButton(text="🔙 Назад", callback_data="main")]
+    ])
+    await msg.answer("🛒 Магазин", reply_markup=kb)
+
+@dp.message(F.text == "💱 Обменник")
+async def exchange_button(msg: types.Message, state: FSMContext):
+    await msg.answer("💱 Обменник\n\nКурс: 1 TON = 200 ⭐\n\nВведи количество TON:")
+    await state.set_state("exchange")
+
+@dp.message(F.state == "exchange")
+async def process_exchange(msg: types.Message, state: FSMContext):
+    try:
+        ton = float(msg.text.replace(",", "."))
+        if ton <= 0:
+            raise ValueError
+    except:
+        await state.clear()
+        return await msg.answer("❌ Неверное число", reply_markup=main_kb())
+
+    stars = int(ton * 200)
+    cur.execute("UPDATE users SET stars = stars + ? WHERE id=?", (stars, msg.from_user.id))
+    db.commit()
+    await state.clear()
+    await msg.answer(f"✅ Получено +{fmt(stars)} ⭐", reply_markup=main_kb())
+
+# ====================== ADMIN ======================
+@dp.message(Command("give"))
+async def give_cmd(msg: types.Message):
+    if not is_admin(msg.from_user):
+        return await msg.answer("❌ Нет доступа")
+
+    try:
+        parts = msg.text.split()
+        amount = int(parts[1])
+        username = parts[2].replace("@", "").lower()
+    except:
+        return await msg.answer("Использование: /give сумма юзернейм")
+
+    cur.execute("SELECT id FROM users WHERE LOWER(username)=?", (username,))
+    row = cur.fetchone()
+    if not row:
+        return await msg.answer("❌ Пользователь не найден")
+
+    cur.execute("UPDATE users SET stars = stars + ? WHERE id=?", (amount, row[0]))
+    db.commit()
+    await msg.answer(f"✅ Выдано {fmt(amount)}⭐ пользователю @{username}")
+
+@dp.message(Command("news"))
+async def news_cmd(msg: types.Message):
+    if not is_admin(msg.from_user):
+        return await msg.answer("❌ Нет доступа")
+
+    text = msg.text[6:].strip()
+    if not text:
+        return await msg.answer("Использование: /news текст")
+
+    cur.execute("SELECT id FROM users")
+    users = cur.fetchall()
+    count = 0
+    for (uid,) in users:
+        try:
+            await bot.send_message(uid, f"📢 {text}")
+            count += 1
+        except:
+            pass
+    await msg.answer(f"✅ Отправлено {count} игрокам")
+
+# ====================== CALLBACKS ======================
+@dp.callback_query(F.data == "main")
+async def cb_main(cb: types.CallbackQuery):
+    await cb.message.answer("Главное меню\n\nВыбери раздел:", reply_markup=main_kb())
+
+@dp.callback_query(F.data == "buy_premium")
+async def buy_premium(cb: types.CallbackQuery):
+    uid = cb.from_user.id
+    u = get_user(uid)
+    if u[1] < 10_000_000:
+        return await cb.answer("Недостаточно звёзд!", show_alert=True)
+
+    cur.execute("UPDATE users SET stars = stars - 10000000, premium_until = ? WHERE id=?",
+                (time.time() + 30 * 86400, uid))
+    db.commit()
+    await cb.message.edit_text("✅ Premium куплен на 30 дней!", reply_markup=back_ikb())
+
+@dp.callback_query(F.data.in_(["buy_888", "buy_7", "buy_380"]))
+async def buy_number(cb: types.CallbackQuery):
+    uid = cb.from_user.id
+    u = get_user(uid)
+    code = cb.data.split("_")[1]
+
+    price = 10_000_000 if code == "888" else 1_000_000
+    if u[1] < price:
+        return await cb.answer("Недостаточно звёзд!", show_alert=True)
+
+    if code == "888":
+        number = f"+888{random.randint(10000000, 99999999)}"
+    elif code == "7":
+        number = f"+7{random.randint(9000000000, 9999999999)}"
+    else:
+        number = f"+380{random.randint(100000000, 999999999)}"
+
+    cur.execute("UPDATE users SET stars = stars - ?, number = ? WHERE id=?", (price, number, uid))
+    db.commit()
+    await cb.message.edit_text(f"✅ Номер получен!\n\n`{number}`", reply_markup=back_ikb(), parse_mode="Markdown")
 
 # ====================== MINES ======================
 @dp.callback_query(F.data == "mines_menu")
 async def mines_menu(cb: types.CallbackQuery, state: FSMContext):
-    uid = cb.from_user.id
     await state.set_state(MinesStates.waiting_bet)
-    await cb.message.edit_text(t(uid, "mines_text"))
+    await cb.message.edit_text("💣 Мины\n\nВведи ставку (100 — 1 000 000):")
 
 @dp.message(MinesStates.waiting_bet)
-async def mines_bet_input(msg: types.Message, state: FSMContext):
-    uid = msg.from_user.id
+async def mines_bet(msg: types.Message, state: FSMContext):
     try:
-        bet = int(msg.text.replace(" ", "").replace(",", ""))
-        if bet < 100 or bet > 1000000:
-            return await msg.answer(t(uid, "invalid_bet"))
+        bet = int(msg.text.replace(" ", ""))
+        if bet < 100 or bet > 1_000_000:
+            return await msg.answer("Ставка от 100 до 1 000 000")
     except:
-        return await msg.answer(t(uid, "invalid_bet"))
+        return await msg.answer("Введи число")
 
-    u = get_user(uid)
+    u = get_user(msg.from_user.id)
     if u[1] < bet:
         await state.clear()
-        return await msg.answer(t(uid, "not_enough"))
+        return await msg.answer("Недостаточно звёзд!", reply_markup=main_kb())
 
     await state.update_data(bet=bet)
     await state.set_state(MinesStates.waiting_mines)
-    await msg.answer(t(uid, "mines_count"))
+    await msg.answer("Теперь введи количество мин (1–24):")
 
 @dp.message(MinesStates.waiting_mines)
-async def mines_count_input(msg: types.Message, state: FSMContext):
-    uid = msg.from_user.id
+async def mines_count(msg: types.Message, state: FSMContext):
     try:
-        mines_count = int(msg.text)
-        if mines_count < 1 or mines_count > 24:
-            return await msg.answer(t(uid, "invalid_mines"))
+        mines = int(msg.text)
+        if mines < 1 or mines > 24:
+            return await msg.answer("От 1 до 24")
     except:
-        return await msg.answer(t(uid, "invalid_mines"))
+        return await msg.answer("Введи число")
 
     data = await state.get_data()
     bet = data["bet"]
     await state.clear()
 
+    uid = msg.from_user.id
     u = get_user(uid)
     if u[1] < bet:
-        return await msg.answer(t(uid, "not_enough"))
+        return await msg.answer("Недостаточно звёзд!", reply_markup=main_kb())
 
     cur.execute("UPDATE users SET stars = stars - ? WHERE id=?", (bet, uid))
-    positions = random.sample(range(25), mines_count)
-    positions_str = ",".join(map(str, positions))
-
-    cur.execute("""
-        INSERT OR REPLACE INTO active_mines(user_id, bet, mines_count, opened, mine_positions, multiplier)
-        VALUES(?,?,?,?,?,?)
-    """, (uid, bet, mines_count, "", positions_str, 1.0))
+    positions = random.sample(range(25), mines)
+    cur.execute("INSERT OR REPLACE INTO active_mines VALUES (?,?,?,?,?,?)",
+                (uid, bet, mines, "", ",".join(map(str, positions)), 1.0))
     db.commit()
 
-    await msg.answer(
-        f"💣 Mines ({mines_count})\n\nBet: {fmt(bet)}⭐\nMult: 1.0x\nWin: 0⭐",
-        reply_markup=mines_grid(uid, mines_count, [])
-    )
+    kb = []
+    row = []
+    for i in range(25):
+        row.append(InlineKeyboardButton(text="🔲", callback_data=f"open_{i}"))
+        if len(row) == 5:
+            kb.append(row)
+            row = []
+    kb.append([InlineKeyboardButton(text="💰 Забрать", callback_data="cashout")])
+    kb.append([InlineKeyboardButton(text="🔙 Меню", callback_data="main")])
+
+    await msg.answer(f"💣 Мины ({mines})\nСтавка: {fmt(bet)}⭐\nМножитель: 1.00x",
+                     reply_markup=InlineKeyboardMarkup(inline_keyboard=kb))
 
 @dp.callback_query(F.data.startswith("open_"))
 async def open_cell(cb: types.CallbackQuery):
@@ -598,347 +378,268 @@ async def open_cell(cb: types.CallbackQuery):
     cell = int(cb.data.split("_")[1])
 
     cur.execute("SELECT bet, mines_count, opened, mine_positions FROM active_mines WHERE user_id=?", (uid,))
-    session = cur.fetchone()
-    if not session:
-        return await cb.answer("No game", show_alert=True)
+    s = cur.fetchone()
+    if not s:
+        return await cb.answer("Игра не найдена")
 
-    bet, mines_count, opened_str, mine_pos_str = session
+    bet, mines, opened_str, pos_str = s
     opened = [int(x) for x in opened_str.split(",")] if opened_str else []
-    mine_pos = [int(x) for x in mine_pos_str.split(",")]
+    mines_pos = [int(x) for x in pos_str.split(",")]
 
     if cell in opened:
-        return await cb.answer("Already")
+        return await cb.answer("Уже открыто")
 
-    if cell in mine_pos:
+    if cell in mines_pos:
         cur.execute("DELETE FROM active_mines WHERE user_id=?", (uid,))
-        cur.execute("UPDATE users SET games_played = games_played + 1 WHERE id=?", (uid,))
         db.commit()
-        await cb.message.edit_text(t(uid, "boom", bet=fmt(bet)), reply_markup=back_kb(uid))
+        await cb.message.edit_text(f"💥 БУМ! Ставка {fmt(bet)}⭐ сгорела.", reply_markup=back_ikb())
         return
 
     opened.append(cell)
-    opened_str = ",".join(map(str, opened))
-
-    safe_cells = 25 - mines_count
+    safe = 25 - mines
     k = len(opened)
     prob = 1.0
     for i in range(k):
-        prob *= (safe_cells - i) / (25 - i)
+        prob *= (safe - i) / (25 - i)
+    mult = min(round((1 / prob) * 0.95, 2), 100.0)
+    win = int(bet * mult)
 
-    multiplier = round((1 / prob) * 0.95, 2) if prob > 0 else 100.0
-    multiplier = min(multiplier, 100.0)
-    win = int(bet * multiplier)
-
-    cur.execute("UPDATE active_mines SET opened=?, multiplier=? WHERE user_id=?", (opened_str, multiplier, uid))
+    cur.execute("UPDATE active_mines SET opened=?, multiplier=? WHERE user_id=?",
+                (",".join(map(str, opened)), mult, uid))
     db.commit()
 
-    if len(opened) == safe_cells:
-        cur.execute("UPDATE users SET stars = stars + ?, games_played = games_played + 1 WHERE id=?", (win, uid))
+    if len(opened) == safe:
+        cur.execute("UPDATE users SET stars = stars + ? WHERE id=?", (win, uid))
         cur.execute("DELETE FROM active_mines WHERE user_id=?", (uid,))
         db.commit()
-        await cb.message.edit_text(t(uid, "win_all", win=fmt(win), mult=multiplier), reply_markup=back_kb(uid))
+        await cb.message.edit_text(f"✅ Все клетки открыты!\nВыигрыш: {fmt(win)}⭐", reply_markup=back_ikb())
         return
 
+    # rebuild keyboard
+    kb = []
+    row = []
+    for i in range(25):
+        txt = "✅" if i in opened else "🔲"
+        row.append(InlineKeyboardButton(text=txt, callback_data=f"open_{i}" if i not in opened else "noop"))
+        if len(row) == 5:
+            kb.append(row)
+            row = []
+    kb.append([InlineKeyboardButton(text="💰 Забрать", callback_data="cashout")])
+    kb.append([InlineKeyboardButton(text="🔙 Меню", callback_data="main")])
+
     await cb.message.edit_text(
-        f"💣 Mines ({mines_count})\n\nBet: {fmt(bet)}⭐\nMult: {multiplier}x\nWin: {fmt(win)}⭐",
-        reply_markup=mines_grid(uid, mines_count, opened)
+        f"💣 Мины ({mines})\nСтавка: {fmt(bet)}⭐\nМножитель: {mult}x\nВыигрыш: {fmt(win)}⭐",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=kb)
     )
 
 @dp.callback_query(F.data == "cashout")
-async def cashout_mines(cb: types.CallbackQuery):
+async def cashout(cb: types.CallbackQuery):
     uid = cb.from_user.id
     cur.execute("SELECT bet, multiplier FROM active_mines WHERE user_id=?", (uid,))
-    session = cur.fetchone()
-    if not session:
-        return await cb.answer("No game", show_alert=True)
+    s = cur.fetchone()
+    if not s:
+        return await cb.answer("Нет игры")
 
-    bet, mult = session
+    bet, mult = s
     win = int(bet * mult)
-
-    cur.execute("UPDATE users SET stars = stars + ?, games_played = games_played + 1 WHERE id=?", (win, uid))
+    cur.execute("UPDATE users SET stars = stars + ? WHERE id=?", (win, uid))
     cur.execute("DELETE FROM active_mines WHERE user_id=?", (uid,))
     db.commit()
-
-    await cb.message.edit_text(t(uid, "cashed", win=fmt(win), mult=mult), reply_markup=back_kb(uid))
-
-# ====================== ROCKET ======================
-@dp.callback_query(F.data == "rocket_menu")
-async def rocket_menu(cb: types.CallbackQuery):
-    uid = cb.from_user.id
-    u = get_user(uid)
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="100 ⭐", callback_data="rocket_bet_100"),
-         InlineKeyboardButton(text="500 ⭐", callback_data="rocket_bet_500")],
-        [InlineKeyboardButton(text="1 000 ⭐", callback_data="rocket_bet_1000"),
-         InlineKeyboardButton(text="5 000 ⭐", callback_data="rocket_bet_5000")],
-        [InlineKeyboardButton(text="10 000 ⭐", callback_data="rocket_bet_10000"),
-         InlineKeyboardButton(text="50 000 ⭐", callback_data="rocket_bet_50000")],
-        [InlineKeyboardButton(text="100 000 ⭐", callback_data="rocket_bet_100000"),
-         InlineKeyboardButton(text="1 000 000 ⭐", callback_data="rocket_bet_1000000")],
-        [InlineKeyboardButton(text=t(uid, "back"), callback_data="main")]
-    ])
-    await cb.message.edit_text(t(uid, "choose_bet", bal=fmt(u[1])), reply_markup=kb)
-
-@dp.callback_query(F.data.startswith("rocket_bet_"))
-async def rocket_place_bet(cb: types.CallbackQuery):
-    uid = cb.from_user.id
-    bet = int(cb.data.split("_")[2])
-    u = get_user(uid)
-
-    cur.execute("SELECT 1 FROM active_rocket WHERE user_id=?", (uid,))
-    if cur.fetchone():
-        return await cb.answer(t(uid, "already_rocket"), show_alert=True)
-
-    if u[1] < bet:
-        return await cb.answer(t(uid, "not_enough"), show_alert=True)
-
-    cur.execute("UPDATE users SET stars = stars - ? WHERE id=?", (bet, uid))
-    crash_point = generate_crash_point()
-    start_time = time.time()
-
-    cur.execute("INSERT INTO active_rocket (user_id, bet, crash_point, start_time, status) VALUES (?, ?, ?, ?, 'flying')",
-                (uid, bet, crash_point, start_time))
-    db.commit()
-
-    asyncio.create_task(rocket_flight(cb.message, uid, bet, crash_point))
-
-async def rocket_flight(message: types.Message, uid: int, bet: int, crash_point: float):
-    cashout_kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="💰 CASH OUT", callback_data="rocket_cashout")]
-    ])
-
-    try:
-        while True:
-            cur.execute("SELECT status, start_time FROM active_rocket WHERE user_id=?", (uid,))
-            row = cur.fetchone()
-            if not row or row[0] != "flying":
-                break
-
-            start_time = row[1]
-            elapsed = time.time() - start_time
-
-            if elapsed < 7:
-                multiplier = 1.00 + elapsed * 0.14
-            else:
-                multiplier = 2.00 + (elapsed - 7) * 0.35
-            multiplier = round(multiplier, 2)
-
-            if multiplier >= crash_point:
-                cur.execute("DELETE FROM active_rocket WHERE user_id=?", (uid,))
-                cur.execute("UPDATE users SET games_played = games_played + 1 WHERE id=?", (uid,))
-                db.commit()
-                await message.edit_text(t(uid, "rocket_crash", crash=crash_point, bet=fmt(bet)), reply_markup=back_kb(uid))
-                break
-
-            win = int(bet * multiplier)
-            text = t(uid, "rocket_fly", mult=multiplier, bet=fmt(bet), win=fmt(win))
-            try:
-                await message.edit_text(text, reply_markup=cashout_kb, parse_mode="HTML")
-            except:
-                pass
-            await asyncio.sleep(0.7)
-    except Exception as e:
-        print("Rocket error:", e)
-        cur.execute("DELETE FROM active_rocket WHERE user_id=?", (uid,))
-        db.commit()
-
-@dp.callback_query(F.data == "rocket_cashout")
-async def rocket_cashout(cb: types.CallbackQuery):
-    uid = cb.from_user.id
-    cur.execute("SELECT bet, crash_point, start_time, status FROM active_rocket WHERE user_id=?", (uid,))
-    row = cur.fetchone()
-    if not row or row[3] != "flying":
-        return await cb.answer("Already finished", show_alert=True)
-
-    bet, crash_point, start_time, status = row
-    elapsed = time.time() - start_time
-    if elapsed < 7:
-        multiplier = 1.00 + elapsed * 0.14
-    else:
-        multiplier = 2.00 + (elapsed - 7) * 0.35
-    multiplier = round(multiplier, 2)
-
-    if multiplier >= crash_point:
-        return await cb.answer("Too late!", show_alert=True)
-
-    win = int(bet * multiplier)
-    cur.execute("UPDATE users SET stars = stars + ?, games_played = games_played + 1 WHERE id=?", (win, uid))
-    cur.execute("DELETE FROM active_rocket WHERE user_id=?", (uid,))
-    db.commit()
-
-    await cb.message.edit_text(
-        t(uid, "rocket_win", mult=multiplier, bet=fmt(bet), win=fmt(win), profit=fmt(win - bet)),
-        reply_markup=back_kb(uid)
-    )
-
-# ====================== DICE ======================
-@dp.callback_query(F.data == "dice_menu")
-async def dice_menu(cb: types.CallbackQuery, state: FSMContext):
-    uid = cb.from_user.id
-    await state.set_state(DiceStates.waiting_bet)
-    await cb.message.edit_text("🎲 Кости\n\nВведи сумму ставки (100 — 1 000 000):")
-
-@dp.message(DiceStates.waiting_bet)
-async def dice_bet(msg: types.Message, state: FSMContext):
-    uid = msg.from_user.id
-    try:
-        bet = int(msg.text.replace(" ", ""))
-        if bet < 100 or bet > 1000000:
-            return await msg.answer(t(uid, "invalid_bet"))
-    except:
-        return await msg.answer(t(uid, "invalid_bet"))
-
-    u = get_user(uid)
-    if u[1] < bet:
-        await state.clear()
-        return await msg.answer(t(uid, "not_enough"))
-
-    await state.update_data(bet=bet)
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Normal (больше побеждает)", callback_data="dice_normal")],
-        [InlineKeyboardButton(text="Cursed (меньше побеждает)", callback_data="dice_cursed")],
-        [InlineKeyboardButton(text=t(uid, "back"), callback_data="main")]
-    ])
-    await state.set_state(DiceStates.waiting_mode)
-    await msg.answer("Выбери режим:", reply_markup=kb)
-
-@dp.callback_query(F.data.in_(["dice_normal", "dice_cursed"]))
-async def dice_play(cb: types.CallbackQuery, state: FSMContext):
-    uid = cb.from_user.id
-    data = await state.get_data()
-    bet = data.get("bet")
-    if not bet:
-        await state.clear()
-        return await cb.answer("Ошибка", show_alert=True)
-
-    mode = "normal" if cb.data == "dice_normal" else "cursed"
-    await state.clear()
-
-    u = get_user(uid)
-    if u[1] < bet:
-        return await cb.answer(t(uid, "not_enough"), show_alert=True)
-
-    cur.execute("UPDATE users SET stars = stars - ? WHERE id=?", (bet, uid))
-    db.commit()
-
-    player_dice = random.randint(1, 6)
-    bot_dice = random.randint(1, 6)
-
-    if mode == "normal":
-        win = player_dice > bot_dice
-    else:
-        win = player_dice < bot_dice
-
-    if player_dice == bot_dice:
-        cur.execute("UPDATE users SET stars = stars + ? WHERE id=?", (bet, uid))
-        db.commit()
-        result = f"🤝 Ничья!\n\nТы: {player_dice} | Бот: {bot_dice}\nСтавка возвращена."
-    elif win:
-        cur.execute("UPDATE users SET stars = stars + ? WHERE id=?", (bet * 2, uid))
-        db.commit()
-        result = f"✅ Победа!\n\nТы: {player_dice} | Бот: {bot_dice}\n+{fmt(bet)} ⭐"
-    else:
-        result = f"❌ Поражение\n\nТы: {player_dice} | Бот: {bot_dice}\n-{fmt(bet)} ⭐"
-
-    cur.execute("UPDATE users SET games_played = games_played + 1 WHERE id=?", (uid,))
-    db.commit()
-    await cb.message.edit_text(result, reply_markup=back_kb(uid))
-
-# ====================== ROULETTE ======================
-@dp.callback_query(F.data == "roulette_menu")
-async def roulette_menu(cb: types.CallbackQuery, state: FSMContext):
-    uid = cb.from_user.id
-    await state.set_state(RouletteStates.waiting_bet)
-    await cb.message.edit_text("🎰 Рулетка\n\nВведи сумму ставки (100 — 1 000 000):")
-
-@dp.message(RouletteStates.waiting_bet)
-async def roulette_bet(msg: types.Message, state: FSMContext):
-    uid = msg.from_user.id
-    try:
-        bet = int(msg.text.replace(" ", ""))
-        if bet < 100 or bet > 1000000:
-            return await msg.answer(t(uid, "invalid_bet"))
-    except:
-        return await msg.answer(t(uid, "invalid_bet"))
-
-    u = get_user(uid)
-    if u[1] < bet:
-        await state.clear()
-        return await msg.answer(t(uid, "not_enough"))
-
-    await state.update_data(bet=bet)
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🔴 Красный", callback_data="roulette_red")],
-        [InlineKeyboardButton(text="⚫ Чёрный", callback_data="roulette_black")],
-        [InlineKeyboardButton(text="⚪ Белый", callback_data="roulette_white")],
-        [InlineKeyboardButton(text=t(uid, "back"), callback_data="main")]
-    ])
-    await state.set_state(RouletteStates.waiting_color)
-    await msg.answer("Выбери цвет:", reply_markup=kb)
-
-@dp.callback_query(F.data.startswith("roulette_"))
-async def roulette_play(cb: types.CallbackQuery, state: FSMContext):
-    uid = cb.from_user.id
-    data = await state.get_data()
-    bet = data.get("bet")
-    if not bet:
-        await state.clear()
-        return
-
-    color = cb.data.split("_")[1]
-    await state.clear()
-
-    u = get_user(uid)
-    if u[1] < bet:
-        return await cb.answer(t(uid, "not_enough"), show_alert=True)
-
-    cur.execute("UPDATE users SET stars = stars - ? WHERE id=?", (bet, uid))
-    db.commit()
-
-    # Анимация
-    colors = ["🔴", "⚫", "⚪", "🔴", "⚫", "⚪", "🔴", "⚫"]
-    msg = await cb.message.edit_text("🎰 Крутим...\n\n" + " | ".join(colors))
-
-    for i in range(8):
-        random.shuffle(colors)
-        try:
-            await msg.edit_text(f"🎰 Крутим...\n\n{' | '.join(colors)}\n\n⬇️")
-        except:
-            pass
-        await asyncio.sleep(0.35)
-
-    # Результат (с небольшим house edge)
-    r = random.random()
-    if r < 0.32:
-        result_color = "red"
-        result_emoji = "🔴"
-    elif r < 0.64:
-        result_color = "black"
-        result_emoji = "⚫"
-    else:
-        result_color = "white"
-        result_emoji = "⚪"
-
-    if color == result_color:
-        win = bet * 2
-        cur.execute("UPDATE users SET stars = stars + ? WHERE id=?", (win, uid))
-        text = f"✅ Победа!\n\nВыпало: {result_emoji}\n+{fmt(bet)} ⭐"
-    else:
-        text = f"❌ Проигрыш\n\nВыпало: {result_emoji}\n-{fmt(bet)} ⭐"
-
-    cur.execute("UPDATE users SET games_played = games_played + 1 WHERE id=?", (uid,))
-    db.commit()
-    await msg.edit_text(text, reply_markup=back_kb(uid))
+    await cb.message.edit_text(f"✅ Забрал {fmt(win)}⭐", reply_markup=back_ikb())
 
 @dp.callback_query(F.data == "noop")
 async def noop(cb: types.CallbackQuery):
     await cb.answer()
 
+# ====================== ROCKET (упрощённый) ======================
+@dp.callback_query(F.data == "rocket_menu")
+async def rocket_menu(cb: types.CallbackQuery):
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="100", callback_data="rocket_100"),
+         InlineKeyboardButton(text="1000", callback_data="rocket_1000"),
+         InlineKeyboardButton(text="10000", callback_data="rocket_10000")],
+        [InlineKeyboardButton(text="100000", callback_data="rocket_100000"),
+         InlineKeyboardButton(text="1000000", callback_data="rocket_1000000")],
+        [InlineKeyboardButton(text="🔙 Назад", callback_data="main")]
+    ])
+    await cb.message.edit_text("🚀 Ракета\nВыбери ставку:", reply_markup=kb)
+
+@dp.callback_query(F.data.startswith("rocket_"))
+async def rocket_start(cb: types.CallbackQuery):
+    uid = cb.from_user.id
+    bet = int(cb.data.split("_")[1])
+    u = get_user(uid)
+
+    if u[1] < bet:
+        return await cb.answer("Недостаточно звёзд!", show_alert=True)
+
+    cur.execute("SELECT 1 FROM active_rocket WHERE user_id=?", (uid,))
+    if cur.fetchone():
+        return await cb.answer("Уже есть активная ракета!", show_alert=True)
+
+    cur.execute("UPDATE users SET stars = stars - ? WHERE id=?", (bet, uid))
+    crash = round(random.uniform(1.01, 15.0), 2)
+    cur.execute("INSERT INTO active_rocket VALUES (?,?,?,?,?)", (uid, bet, crash, time.time(), "flying"))
+    db.commit()
+
+    asyncio.create_task(rocket_loop(cb.message, uid, bet, crash))
+
+async def rocket_loop(message, uid, bet, crash):
+    mult = 1.00
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="💰 ЗАБРАТЬ", callback_data="rocket_cash")]
+    ])
+    try:
+        while True:
+            cur.execute("SELECT status FROM active_rocket WHERE user_id=?", (uid,))
+            row = cur.fetchone()
+            if not row or row[0] != "flying":
+                break
+
+            mult = round(mult + 0.15 + (mult * 0.03), 2)
+            if mult >= crash:
+                cur.execute("DELETE FROM active_rocket WHERE user_id=?", (uid,))
+                db.commit()
+                await message.edit_text(f"💥 Взорвалась на {crash}x\nПотерял {fmt(bet)}⭐", reply_markup=back_ikb())
+                break
+
+            win = int(bet * mult)
+            try:
+                await message.edit_text(
+                    f"🚀 Летит...\n\nМножитель: <b>{mult}x</b>\nВыигрыш: {fmt(win)}⭐",
+                    reply_markup=kb, parse_mode="HTML"
+                )
+            except:
+                pass
+            await asyncio.sleep(0.8)
+    except:
+        cur.execute("DELETE FROM active_rocket WHERE user_id=?", (uid,))
+        db.commit()
+
+@dp.callback_query(F.data == "rocket_cash")
+async def rocket_cash(cb: types.CallbackQuery):
+    uid = cb.from_user.id
+    cur.execute("SELECT bet, crash_point, start_time, status FROM active_rocket WHERE user_id=?", (uid,))
+    row = cur.fetchone()
+    if not row or row[3] != "flying":
+        return await cb.answer("Уже поздно")
+
+    bet = row[0]
+    # просто даём текущий приблизительный множитель
+    mult = 2.0  # упрощённо
+    win = int(bet * mult)
+
+    cur.execute("UPDATE users SET stars = stars + ? WHERE id=?", (win, uid))
+    cur.execute("DELETE FROM active_rocket WHERE user_id=?", (uid,))
+    db.commit()
+    await cb.message.edit_text(f"✅ Забрал {fmt(win)}⭐", reply_markup=back_ikb())
+
+# ====================== DICE ======================
+@dp.callback_query(F.data == "dice_menu")
+async def dice_menu(cb: types.CallbackQuery, state: FSMContext):
+    await state.set_state(DiceStates.waiting_bet)
+    await cb.message.edit_text("🎲 Кости\nВведи ставку (100–1000000):")
+
+@dp.message(DiceStates.waiting_bet)
+async def dice_bet(msg: types.Message, state: FSMContext):
+    try:
+        bet = int(msg.text.replace(" ", ""))
+        if bet < 100 or bet > 1000000:
+            return await msg.answer("От 100 до 1 000 000")
+    except:
+        return await msg.answer("Введи число")
+
+    uid = msg.from_user.id
+    u = get_user(uid)
+    if u[1] < bet:
+        await state.clear()
+        return await msg.answer("Недостаточно звёзд!", reply_markup=main_kb())
+
+    await state.clear()
+    cur.execute("UPDATE users SET stars = stars - ? WHERE id=?", (bet, uid))
+
+    player = random.randint(1, 6)
+    bot_d = random.randint(1, 6)
+
+    if player > bot_d:
+        cur.execute("UPDATE users SET stars = stars + ? WHERE id=?", (bet * 2, uid))
+        text = f"✅ Победа!\nТы: {player} | Бот: {bot_d}\n+{fmt(bet)}⭐"
+    elif player < bot_d:
+        text = f"❌ Поражение\nТы: {player} | Бот: {bot_d}\n-{fmt(bet)}⭐"
+    else:
+        cur.execute("UPDATE users SET stars = stars + ? WHERE id=?", (bet, uid))
+        text = f"🤝 Ничья\nТы: {player} | Бот: {bot_d}\nСтавка возвращена"
+
+    db.commit()
+    await msg.answer(text, reply_markup=main_kb())
+
+# ====================== ROULETTE ======================
+@dp.callback_query(F.data == "roulette_menu")
+async def roulette_menu(cb: types.CallbackQuery, state: FSMContext):
+    await state.set_state(RouletteStates.waiting_bet)
+    await cb.message.edit_text("🎰 Рулетка\nВведи ставку:")
+
+@dp.message(RouletteStates.waiting_bet)
+async def roulette_bet(msg: types.Message, state: FSMContext):
+    try:
+        bet = int(msg.text.replace(" ", ""))
+        if bet < 100 or bet > 1000000:
+            return await msg.answer("От 100 до 1 000 000")
+    except:
+        return await msg.answer("Введи число")
+
+    uid = msg.from_user.id
+    u = get_user(uid)
+    if u[1] < bet:
+        await state.clear()
+        return await msg.answer("Недостаточно звёзд!", reply_markup=main_kb())
+
+    await state.update_data(bet=bet)
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🔴 Красный", callback_data="rou_red")],
+        [InlineKeyboardButton(text="⚫ Чёрный", callback_data="rou_black")],
+        [InlineKeyboardButton(text="⚪ Белый", callback_data="rou_white")]
+    ])
+    await msg.answer("Выбери цвет:", reply_markup=kb)
+
+@dp.callback_query(F.data.startswith("rou_"))
+async def roulette_play(cb: types.CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    bet = data.get("bet")
+    await state.clear()
+    if not bet:
+        return
+
+    uid = cb.from_user.id
+    color = cb.data.split("_")[1]
+
+    cur.execute("UPDATE users SET stars = stars - ? WHERE id=?", (bet, uid))
+    db.commit()
+
+    # простая анимация
+    for _ in range(5):
+        emojis = random.sample(["🔴", "⚫", "⚪"], 3)
+        try:
+            await cb.message.edit_text(f"🎰 {' | '.join(emojis)}")
+        except:
+            pass
+        await asyncio.sleep(0.3)
+
+    result = random.choice(["red", "black", "white"])
+    emoji = {"red": "🔴", "black": "⚫", "white": "⚪"}[result]
+
+    if color == result:
+        cur.execute("UPDATE users SET stars = stars + ? WHERE id=?", (bet * 2, uid))
+        text = f"✅ Победа! Выпало {emoji}\n+{fmt(bet)}⭐"
+    else:
+        text = f"❌ Проигрыш. Выпало {emoji}\n-{fmt(bet)}⭐"
+
+    db.commit()
+    await cb.message.edit_text(text, reply_markup=back_ikb())
+
 async def main():
-    print("BOT STARTED!")
+    print("BOT STARTED")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-

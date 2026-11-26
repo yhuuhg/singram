@@ -63,8 +63,9 @@ CREATE TABLE IF NOT EXISTS transactions(
 )
 """)
 
-db.execute("PRAGMA table_info(users)")
-columns = {row["name"] for row in db.fetchall()}
+# Получаем список существующих колонок
+cursor = db.execute("PRAGMA table_info(users)")
+columns = {row[1] for row in cursor.fetchall()}   # row[1] — это название колонки
 
 migrations = {
     "username": "TEXT",
